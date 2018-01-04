@@ -1,0 +1,8 @@
+
+# Janrain main settings form.
+janrain.settings_form:
+  title: 'Janrain settings'
+  route_name: janrain.settings_form
+  description: 'Janrain main settings form'
+  parent: user.admin_index
+  weight: 100

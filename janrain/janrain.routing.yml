@@ -1,0 +1,20 @@
+
+janrain.information_form:
+  path: '/admin/config/people/janrain'
+  defaults:
+    _form: '\Drupal\janrain\Form\JanrainInformationForm'
+    _title: 'Information'
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _admin_route: TRUE
+
+janrain.settings_form:
+  path: '/admin/config/people/janrain/settings'
+  defaults:
+    _form: '\Drupal\janrain\Form\JanrainSettingsForm'
+    _title: 'Janrain settings'
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _admin_route: 'TRUE'

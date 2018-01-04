@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * Janrain functionality.
+ */
+
+use Drupal\janrain\DrupalAdapter;
+use Drupal\Component\Utility\Html;
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function janrain_preprocess_html(&$variables) {
+  // Add logged in status to behaviors.
+  // Add clean url to behaviors.
+  \Drupal::config('janrain.settings')->get('clean_url');
+  $variables['#attached']['drupalSettings']['janrain'] = [
+    'user_is_logged_in' => intval(\Drupal::currentUser()->isAnonymous()),
+    'clean_url' => TRUE,
+  ];
+}
+
+/**
+ * Implements hook_form_user_register_form_alter().
+ *
+ * @todo-3.1 display icon and displayname in addition to identifier
+ */
+function janrain_form_user_register_form_alter(&$form, &$form_state) {
+  // Janrain info in session show user the identifier that will be linked.
+  $identifiers = DrupalAdapter::getSessionItem('identifiers');
+  $form['janrain_display'] = [
+    '#type' => 'item',
+    '#title' => t('Your Social Identifier'),
+    '#description' => t('This Social Identifier will be attached to your account after registration.'),
+    '#markup' => '<p>' . Html::escape($identifiers[0]) . '</p>',
+  ];
+  $form['janrain_identifiers'] = [
+    '#type' => 'value',
+    '#value' => DrupalAdapter::getSessionItem('identifiers'),
+  ];
+
+  // Prepopulate any data we have.
+  $form['account']['mail']['#default_value'] = DrupalAdapter::getSessionItem('email');
+  $form['account']['name']['#default_value'] = DrupalAdapter::getSessionItem('name');
+
+  // Add submit handler.
+  $form['#submit'][] = 'janrain_form_user_register_form_submit';
+}
+
+/**
+ * Submit handler for register form.
+ */
+function janrain_form_user_register_form_submit(&$form, &$form_state) {
+  /** @var \Drupal\user\Entity\User $account */
+  $account = \Drupal::entityTypeManager()->getStorage('user')->load($form_state->get('uid'));
+  $identity_service = \Drupal::service('janrain.identity');
+  $identity_service->linkIdentifiers($account, NULL);
+  $identity_service->clearSession();
+
+  // Log user in.
+  $form_state->setValue('uid', $account->uid);
+  user_login_finalize($account);
+}
+
+/**
+ * Implements hook_user_logout().
+ *
+ * @todo-3.1 move into sdk
+ */
+function janrain_user_logout($account) {
+  DrupalAdapter::dropSessionItem();
+}
+
+/**
+ * Implements hook_form_user_login_alter().
+ */
+function janrain_form_user_login_alter(&$form, &$form_state) {
+  $form['name']['#required'] = FALSE;
+  $form['pass']['#required'] = FALSE;
+  if (\Drupal::service('janrain.identity')->isLoginOnly()) {
+    array_unshift($form['#validate'], ['Drupal\janrain\JanrainAccountValidate', 'loginValidate']);
+  }
+  else {
+    array_unshift($form['#validate'], ['Drupal\janrain\JanrainAccountValidate', 'registerValidate']);
+  }
+}

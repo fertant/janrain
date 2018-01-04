@@ -1,0 +1,18 @@
+services:
+services:
+  http_middleware.janrain:
+    class: Drupal\janrain\StackMiddleware\JanrainInit
+    tags:
+      - { name: http_middleware, priority: 210, responder: true }
+  janrain.load.event:
+    class: Drupal\janrain\EventSubscriber\JanrainLoadSubscriber
+    arguments: ['@config.factory', '@janrain.identity']
+    tags:
+      - { name: event_subscriber }
+  janrain.header_response_subscriber.event:
+    class: Drupal\janrain\EventSubscriber\HeaderResponseSubscriber
+    tags:
+      - { name: event_subscriber }
+  janrain.identity:
+    class: Drupal\janrain\Identity
+    arguments: ['@database', '@logger.factory', '@externalauth.authmap', '@config.factory']

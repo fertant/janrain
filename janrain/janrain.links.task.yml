@@ -1,0 +1,11 @@
+# Janrain routes
+janrain.settings_form:
+  route_name: janrain.settings_form
+  base_route: janrain.settings_form
+  title: 'Settings'
+
+janrain.information_form:
+  route_name: janrain.information_form
+  base_route: janrain.settings_form
+  title: 'Information'
+
