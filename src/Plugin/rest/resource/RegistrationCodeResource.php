@@ -22,6 +22,7 @@ use Drupal\Core\Logger\RfcLogLevel;
  *   label = @Translation("Push Janrain identity credentials into user session"),
  *   uri_paths = {
  *     "canonical" = "/janrain/registration/code",
+ *     "https://www.drupal.org/link-relations/create" = "/janrain/registration/session_token",
  *   }
  * )
  */

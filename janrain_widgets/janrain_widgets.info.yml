@@ -1,0 +1,7 @@
+name: Janrain User Interface
+type: module
+description: Create and manage Janrain user interface packages for registration and social login.
+core: 8.x
+package: Janrain
+dependencies:
+  - janrain

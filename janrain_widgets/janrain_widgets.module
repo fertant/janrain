@@ -1,0 +1,172 @@
+<?php
+
+/**
+ * @file
+ * Contains janrain_widgets.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\file\Entity\File;
+use Drupal\Component\Render\FormattableMarkup;
+
+/**
+ * Implements hook_help().
+ */
+function janrain_widgets_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the janrain_widgets module.
+    case 'help.page.janrain_widgets':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Create and manage Janrain user interface packages for registration and social login.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function janrain_widgets_preprocess_html(&$variables) {
+  $sdk = JanrainSdk::instance();
+  if (\Drupal::service('janrain.identity')->isLoginOnly()) {
+    if ($sdk->FederateWidget) {
+      $sso_script = $sdk->FederateWidget->getStartHeadJs()
+        . $sdk->FederateWidget->getSettingsHeadJs()
+        . $sdk->FederateWidget->getEndHeadJs();
+      $variables['page_bottom']['janrain_sso_script'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'script',
+        '#value' => new FormattableMarkup($sso_script, []),
+        '#attributes' => [
+          'type' => 'text/javascript',
+        ],
+      ];
+    }
+  }
+}
+
+/**
+ * Add janrain dynamic library in depends from widget type.
+ *
+ * @param array &$attachments
+ *   An array that you can add attachments to.
+ *
+ * @see hook_page_attachments_alter()
+ */
+function janrain_widgets_page_attachments(array &$attachments) {
+  $sdk = JanrainSdk::instance();
+  if (\Drupal::service('janrain.identity')->isLoginOnly()) {
+    if ($sdk->BackplaneWidget) {
+      $attachments['#attached']['library'][] = 'janrain_widgets/janrain_widget.BackplaneWidget';
+    }
+    if ($sdk->FederateWidget) {
+      $attachments['#attached']['library'][] = 'janrain_widgets/janrain_widget.FederateWidget';
+    }
+  }
+}
+
+/**
+ * Add Janrain dynamic library definitions.
+ *
+ * @return array[]
+ *   An array of library definitions to register, keyed by library ID. The
+ *   library ID will be prefixed with the module name automatically.
+ *
+ * @see core.libraries.yml
+ * @see hook_library_info_alter()
+ */
+function janrain_widgets_library_info_build() {
+  $libraries = [];
+  if (\Drupal::service('janrain.identity')->isLoginOnly()) {
+    $sdk = JanrainSdk::instance();
+
+    if ($sdk->EngageWidget) {
+      $libraries['janrain_widget.EngageWidget'] = [
+        'header' => TRUE,
+        'js' => [],
+      ];
+
+      // Federate in play, make sure SSO logout works.
+      foreach ($sdk->EngageWidget->getHeadJsSrcs() as $src) {
+        $libraries['janrain_widget.EngageWidget']['js'] += [$src => ['type' => 'external']];
+      }
+    }
+    if ($sdk->BackplaneWidget) {
+      $sdk->BackplaneWidget->getHeadJsSrcs();
+      $libraries['janrain_widget.BackplaneWidget'] = [
+        'header' => TRUE,
+        'js' => [],
+      ];
+      foreach ($sdk->BackplaneWidget->getHeadJsSrcs() as $js) {
+        $libraries['janrain_widget.BackplaneWidget']['js'] += [$js => ['type' => 'external']];
+      }
+    }
+    if ($sdk->FederateWidget) {
+      $libraries['janrain_widget.FederateWidget'] = [
+        'header' => TRUE,
+        'js' => [],
+      ];
+
+      // Federate in play, make sure SSO logout works.
+      foreach ($sdk->FederateWidget->getHeadJsSrcs() as $src) {
+        $libraries['janrain_widget.FederateWidget']['js'] += [$src => ['type' => 'external']];
+      }
+    }
+  }
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds widget asset management fields to main config page.
+ */
+function janrain_widgets_form_janrain_settings_form_alter(&$form, &$form_state, $form_id) {
+  $instance = \Drupal::classResolver()->getInstanceFromDefinition('Drupal\janrain_widgets\Form\JanrainSettingsFormAlter');
+  $instance->mainSettingsFormAlter($form, $form_state);
+}
+
+/**
+ * Validate the widget package.
+ */
+function janrain_widgets_file_validator(File $file) {
+  $tmp = \Drupal::service('file_system')->realpath($file->getFileUri());
+  $sdk = JanrainSdk::instance();
+  $sdk->addFeatureByName('CaptureWidget');
+  return $sdk->CaptureWidget->validateAssetsZip($tmp);
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Makes sure the widget packages are properly synchronized with the state of
+ * the disk.
+ */
+function janrain_widgets_cron() {
+  \Drupal::service('janrain_widgets.pkgs')->discoverPkgs();
+}
+
+/**
+ * Implements hook_preprocess_links().
+ */
+function janrain_widgets_preprocess_links(&$variables) {
+  if (!empty($variables['links'])) {
+    foreach ($variables['links'] as $key => $value) {
+      /** @var Drupal\Core\Url $url */
+      $path = $value['link']['#url'];
+      if ($path->toString() == '/user/logout' && JanrainSdk::instance()->FederateWidget) {
+        if (\Drupal::service('janrain.identity')->isLoginOnly()) {
+          $variables['links'][$key]['link']['#options']['attributes']['onclick'][] = 'window.janrain.plex.ssoLogout();';
+          $variables['links'][$key]['attributes']->setAttribute('onclick', 'window.janrain.plex.ssoLogout();');
+        }
+        else {
+          $variables['links'][$key]['link']['#options']['attributes']['onclick'][] = 'janrain.plex.ssoLogout();';
+          $variables['links'][$key]['attributes']->setAttribute('onclick', 'window.janrain.plex.ssoLogout();');
+        }
+      }
+    }
+  }
+}

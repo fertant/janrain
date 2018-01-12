@@ -9,21 +9,21 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use janrain\Sdk as JanrainSdk;
 use Drupal\janrain\DrupalAdapter;
-use Symfony\Component\Config\Definition\Exception\Exception;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
- * Provides a resource to post access token.
+ * Provides a resource to post session token.
  *
  * @RestResource(
- *   id = "janrain_token_resource",
- *   label = @Translation("Push Janrain identity credentials into user session"),
+ *   id = "janrain_session_token_resource",
+ *   label = @Translation("Returns current session token for logged in user, refreshes token if necessary"),
  *   uri_paths = {
- *     "canonical" = "/janrain/login/token",
+ *     "canonical" = "/janrain/registration/session_token",
+ *     "https://www.drupal.org/link-relations/create" = "/janrain/registration/session_token",
  *   }
  * )
  */
-class LoginTokenResource extends ResourceBase implements DependentPluginInterface {
+class SessionTokenResource extends ResourceBase implements DependentPluginInterface {
 
   /**
    * The module handler service.
@@ -33,7 +33,7 @@ class LoginTokenResource extends ResourceBase implements DependentPluginInterfac
   protected $moduleHandler;
 
   /**
-   * Constructs a LoginTokenResource object.
+   * Constructs a SessionTokenResource object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -75,11 +75,6 @@ class LoginTokenResource extends ResourceBase implements DependentPluginInterfac
   /**
    * Responds to POST requests.
    *
-   * POST data should be structured in next way:
-   *  $data = [
-   *    'token'
-   *  ]
-   *
    * @param array $data
    *   Data array.
    *
@@ -88,28 +83,23 @@ class LoginTokenResource extends ResourceBase implements DependentPluginInterfac
    */
   public function post(array $data = []) {
     $sdk = JanrainSdk::instance();
-
-    try {
-      // Trade token for profile.
-      $profile = $sdk->EngageApi->fetchProfileByToken($data['token']);
+    $token_expires = DrupalAdapter::getSessionItem('tokenExpires');
+    if ($token_expires && (time() > $token_expires)) {
+      try {
+        $new_tokens = $sdk->CaptureApi->oauthRefreshToken(DrupalAdapter::getSessionItem('refreshToken'));
+        DrupalAdapter::setSessionItem('accessToken', $new_tokens->access_token);
+        DrupalAdapter::setSessionItem('refreshToken', $new_tokens->refresh_token);
+        DrupalAdapter::setSessionItem('tokenExpires', time() + intval($new_tokens->expires_in) - 60 * 10);
+      }
+      catch (\Exception $e) {
+        // Call to Capture failed, this is something that needs attention.
+        $this->logger->alert($e->getMessage());
+      }
+      $result = $new_tokens->access_token;
     }
-    catch (Exception $e) {
-      // Engage call failed for login, this is superbad.
-      $this->logger->emergency($e->getMessage());
-      // Also log the full stack dump to syslog.
-      error_log($e->getTraceAsString());
-      // Return response.
-      return new ModifiedResourceResponse($e->getMessage());
+    else {
+      $result = DrupalAdapter::getSessionItem('accessToken');
     }
-
-    // Notify listeners.
-    $this->moduleHandler->invokeAll('janrain_profile_received', $profile);
-
-    // Set session data.
-    DrupalAdapter::setSessionItem('identifiers', $profile->getIdentifiers());
-    DrupalAdapter::setSessionItem('name', $profile->getFirst("$.profile.displayName"));
-    DrupalAdapter::setSessionItem('profile', $profile->__toString());
-    $result = 'Session enhanced with social login data! Proceed to login';
 
     // Return response.
     return new ModifiedResourceResponse($result);

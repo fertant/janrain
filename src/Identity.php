@@ -7,7 +7,9 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\externalauth\AuthmapInterface;
 use Drupal\Component\Utility\Xss;
 use janrain\Profile;
+use janrain\Sdk as JanrainSdk;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use janrain\platform\Renderable as RenderableWidget;
 
 /**
  * Provides an identity helper methods.
@@ -163,6 +165,33 @@ class Identity {
     $module_path = drupal_get_path('module', 'janrain');
     $composer = json_decode(file_get_contents($module_path . '/composer.json'));
     return $composer->version;
+  }
+
+  /**
+   * Get current list of features.
+   *
+   * @param \janrain\Sdk $sdk
+   *   Janrain class instance.
+   */
+  public function getEnabledFeatures(JanrainSdk $sdk) {
+    $list = [];
+    // Pull only the renderable features.
+    $features = array_filter(iterator_to_array($sdk->getFeatures()), function ($obj) {
+      return $obj instanceof RenderableWidget;
+    });
+    // Order by render priority need to silence the sort.
+    @usort($features, function (RenderableWidget $a, RenderableWidget $b) {
+      $pa = $a->getPriority();
+      $pb = $b->getPriority();
+      if ($pa == $pb) {
+        return 0;
+      }
+      return $pa > $pb ? 1 : -1;
+    });
+    foreach ($features as $f) {
+      $list[$f->getName()] = $f->getName();
+    }
+    return $list;
   }
 
 }

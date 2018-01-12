@@ -1,0 +1,10 @@
+services:
+  janrain_widgets.load.event:
+    class: Drupal\janrain_widgets\EventSubscriber\JanrainWidgetsLoadSubscriber
+    arguments: ['@config.factory', '@janrain.identity']
+    tags:
+      - { name: event_subscriber }
+  janrain_widgets.pkgs:
+    class: Drupal\janrain_widgets\JanrainPackagesService
+    arguments: ['@database', '@cache.default', '@logger.factory', '@file_system', '@file.usage']
+

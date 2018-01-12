@@ -230,7 +230,7 @@ class JanrainSettingsForm extends ConfigFormBase {
   /**
    * Validate callback for login settings form submit.
    */
-  protected function settingsFormValidateLoginOnly($form, &$form_state) {
+  protected function settingsFormValidateLoginOnly(array $form, FormStateInterface &$form_state) {
     $sdk = JanrainSdk::instance();
     $config = $sdk->getConfig();
     $sdk->addFeatureByName('EngageApi');
@@ -253,7 +253,7 @@ class JanrainSettingsForm extends ConfigFormBase {
       }
       catch (Exception $e) {
         $form_state->setError(
-          'janrain_social_login][apiKey',
+          $form['janrain_social_login']['apiKey'],
           $this->t('Unable to fetch Janrain settings: {{message}}.  Details in watchdog.',
             ['{{message}}' => $e->getMessage()]));
         $msg = sprintf("%s\n%s", Xss::filter($e->getMessage()), Xss::filter($e->getTraceAsString()));
@@ -264,7 +264,7 @@ class JanrainSettingsForm extends ConfigFormBase {
       // User errors, highlight what's bad.
       foreach ($config_errors as $setting_name => $err_codes) {
         $form_state->setError(
-          'janrain_social_login][' . $setting_name,
+          $form['janrain_social_login'][$setting_name],
           $this->t('Setting %name failed validation. (%code)', [
             '%name' => $setting_name,
             '%code' => implode(',', $err_codes),
@@ -288,7 +288,7 @@ class JanrainSettingsForm extends ConfigFormBase {
   /**
    * Validate callback for registration settings from submit.
    */
-  protected function settingsFormValidateRegistration($form, &$form_state) {
+  protected function settingsFormValidateRegistration(array $form, FormStateInterface &$form_state) {
     $sdk = JanrainSdk::instance();
     $settings = $sdk->getConfig();
     $settings->setItem('features', []);
@@ -335,7 +335,7 @@ class JanrainSettingsForm extends ConfigFormBase {
       }
       catch (Exception $e) {
         // Failed call to capture, usually bad app url or invalid client/secret.
-        $form_state->setError('janrain_social_data', $this->t("Error talking to Janrain: {{error}}", ['{{error}}' => $e->getMessage()]));
+        $form_state->setError($form['janrain_social_data'], $this->t("Error talking to Janrain: {{error}}", ['{{error}}' => $e->getMessage()]));
         watchdog_exception('janrain_admin_ui', $e, NULL, [], RfcLogLevel::EMERGENCY);
       }
     }
@@ -343,7 +343,7 @@ class JanrainSettingsForm extends ConfigFormBase {
       // Errors!
       foreach ($config_errors as $setting_name => $err_codes) {
         $form_state->setError(
-          'janrain_social_data][' . $setting_name,
+          $form['janrain_social_data'][$setting_name],
           $this->t('Setting %name failed validation. (%code)', [
             '%name' => $setting_name,
             '%code' => implode(',', $err_codes),

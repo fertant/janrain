@@ -1,0 +1,38 @@
+<script type="application/javascript">
+  // @todo move to drupal behaviors?
+  function janrainPlexLogin(accessToken) {
+    var base_path = Drupal.settings.basePath;
+    if (!Drupal.settings.janrain.clean_url) {
+      base_path = Drupal.settings.basePath + '?q=';
+    }
+    if (!accessToken) {
+      console && console.error('Bork!');
+    }
+    jQuery.ajax({
+      url: base_path + 'services/session/token',
+      error: function (jqxhr, status, error) {console.error(error);},
+      success: function (drupalToken) {
+        console && console.log(drupalToken);
+        jQuery.ajax({
+          url: base_path + 'janrain/login/token.json',
+          type:'post',
+          xhrFields:{withCredentials:true},
+          beforeSend: function (req) {req.setRequestHeader('X-CSRF-Token', drupalToken);},
+          error: function (jqxhr, status, error) {console.error(error);},
+          data:{token:accessToken},
+          success: function (resp) {
+            console.log(resp);
+            // @todo generate form from Forms API to gain security and stuff
+            document.getElementById('user_login').submit();
+          } // janrain success
+        }); // janrain ajax
+      } // drupal success
+    }); // drupal ajax
+  }
+    {{ dynamicJs|raw }}
+  janrain.settings.beforeJanrainWidgetOnLoad = [function () {
+    janrain.events.onProviderLoginToken.addHandler(function (evt) {
+      janrainPlexLogin(evt.token);
+    });
+  }];
+</script>

@@ -1,0 +1,18 @@
+
+janrain_widgets.widgets_settings_form:
+  path: 'admin/config/people/janrain/widgets'
+  defaults:
+    _form: '\Drupal\janrain_widgets\Form\WidgetsSettingsForm'
+    _title: 'SSO / Backplane'
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _admin_route: TRUE
+
+janrain_widgets.xdcomm_controller:
+  path: 'janrain/xdcomm.html'
+  defaults:
+    _controller: '\Drupal\janrain_widgets\Controller\XdcommController::render'
+    _title: 'xdcomm'
+  requirements:
+    _permission: 'access content'

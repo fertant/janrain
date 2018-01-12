@@ -1,0 +1,14 @@
+{
+  "name": "drupal/janrain_widgets",
+  "type": "drupal-module",
+  "description": "Create and manage Janrain user interface packages for registration and social login.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/janrain_widgets",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/janrain_widgets",
+    "source": "http://cgit.drupalcode.org/janrain_widgets"
+  },
+  "require": { }
+}

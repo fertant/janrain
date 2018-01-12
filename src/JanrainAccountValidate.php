@@ -18,11 +18,12 @@ use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Component\Utility\Timer;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use janrain\Profile;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 
 /**
  * Controller for image style edit form.
  */
-class JanrainAccountValidate {
+class JanrainAccountValidate implements ContainerInjectionInterface {
 
   /**
    * The image effect manager service.
@@ -103,6 +104,22 @@ class JanrainAccountValidate {
       $container->get('externalauth.authmap'),
       $container->get('module_handler')
     );
+  }
+
+  /**
+   * Login validation instance.
+   */
+  public static function loginValidateInstance(&$form, &$form_state) {
+    $instance = \Drupal::classResolver()->getInstanceFromDefinition('Drupal\janrain\JanrainAccountValidate');
+    $instance->loginValidate($form, $form_state);
+  }
+
+  /**
+   * Register validation instance.
+   */
+  public static function registerValidateInstance(&$form, &$form_state) {
+    $instance = \Drupal::classResolver()->getInstanceFromDefinition('Drupal\janrain\JanrainAccountValidate');
+    $instance->registerValidate($form, $form_state);
   }
 
   /**

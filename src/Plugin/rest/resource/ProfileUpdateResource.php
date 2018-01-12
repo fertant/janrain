@@ -19,6 +19,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
  *   label = @Translation("Updates the profile of the logged in user when user submits Janrain profile form"),
  *   uri_paths = {
  *     "canonical" = "/janrain/registration/profile_update",
+ *     "https://www.drupal.org/link-relations/create" = "/janrain/registration/profile_update",
  *   }
  * )
  */

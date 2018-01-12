@@ -1,0 +1,5 @@
+# Janrain routes
+janrain_widgets.widgets_settings_form:
+  route_name: janrain_widgets.widgets_settings_form
+  base_route: janrain.settings_form
+  title: 'SSO / Backplane'
